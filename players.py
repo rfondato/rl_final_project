@@ -1,9 +1,19 @@
+from typing import Union
+
 import numpy as np
 from boardgame2 import ReversiEnv
+from abc import ABC, abstractmethod
+
+from stable_baselines3 import PPO
 
 
-class GreedyPlayer():
-    def __init__(self, player=1, board_shape=None, env=None, flatten_action=False):
+class BasePlayer(ABC):
+    def __init__(self,
+                 player: int = 1,
+                 board_shape: int = None,
+                 env: ReversiEnv = None,
+                 flatten_action: bool = False
+                 ):
         if (env is None) and (board_shape is None):
             print("board_shape and env can't be both None")
         if env is None:
@@ -13,10 +23,28 @@ class GreedyPlayer():
         self.flatten_action = flatten_action
         self.board_shape = self.env.board.shape[0]
 
-    def predict(self, board):
+    @abstractmethod
+    def predict(self, board: np.ndarray) -> Union[int, np.ndarray]:
+        """
+        Returns the action to play given a board.
+        :param board: Numpy array of board_shape x board_shape with current board
+        :return: Numpy array of dimension 2 with row and column to play if flatten_action is False.
+                If flatten_action is True, it returns an int with the slot number.
+        """
+
+
+class GreedyPlayer(BasePlayer):
+    def __init__(self,
+                 player: int = 1,
+                 board_shape: int = None,
+                 env: ReversiEnv = None,
+                 flatten_action: bool = False
+                 ):
+        super().__init__(player, board_shape, env, flatten_action)
+
+    def predict(self, board: np.ndarray) -> Union[int, np.ndarray]:
         valid_actions = np.argwhere(self.env.get_valid((board, self.player)) == 1)
         if len(valid_actions) == 0:
-            print('pass')
             action = self.env.PASS
         else:
             moves_score = []
@@ -32,21 +60,18 @@ class GreedyPlayer():
             return action
 
 
-class RandomPlayer():
-    def __init__(self, player=1, board_shape=None, env=None, flatten_action=False):
-        if (env is None) and (board_shape is None):
-            print("board_shape and env can't be both None")
-        if env is None:
-            env = ReversiEnv(board_shape=board_shape)
-        self.env = env
-        self.player = player
-        self.flatten_action = flatten_action
-        self.board_shape = self.env.board.shape[0]
+class RandomPlayer(BasePlayer):
+    def __init__(self,
+                 player: int = 1,
+                 board_shape: int = None,
+                 env: ReversiEnv = None,
+                 flatten_action: bool = False
+                 ):
+        super().__init__(player, board_shape, env, flatten_action)
 
-    def predict(self, board):
+    def predict(self, board: np.ndarray) -> Union[int, np.ndarray]:
         valid_actions = np.argwhere(self.env.get_valid((board, self.player)) == 1)
         if len(valid_actions) == 0:
-            print('pass')
             action = self.env.PASS
         else:
             action = valid_actions[np.random.randint(len(valid_actions))]
@@ -56,20 +81,55 @@ class RandomPlayer():
             return action
 
 
-class DictPolicyPlayer():
-    def __init__(self, player=1, board_shape=4, env=None, flatten_action=False,
-                 dict_folder='mdp/pi_func_only_winner.npy'):
+class DictPolicyPlayer(BasePlayer):
+    def __init__(self,
+                 player: int = 1,
+                 board_shape: int = None,
+                 env: ReversiEnv = None,
+                 flatten_action: bool = False,
+                 dict_folder: str = 'mdp/pi_func_only_winner.npy'):
+        super().__init__(player, board_shape, env, flatten_action)
         self.pi_dict = np.load(dict_folder, allow_pickle=True).item()
-        if env is None:
-            env = ReversiEnv(board_shape=board_shape)
-        self.player = player
-        self.flatten_action = flatten_action
-        self.board_shape = board_shape
 
-    def predict(self, board):
+    def predict(self, board: np.ndarray) -> Union[int, np.ndarray]:
         board_tuple = tuple((board * self.player).reshape(-1))
         action = self.pi_dict[board_tuple]
         if self.flatten_action:
             return action
         else:
-            return [action // self.board_shape, action % self.board_shape]
+            return np.array([action // self.board_shape, action % self.board_shape])
+
+
+class TorchPlayer(BasePlayer):
+    def __init__(self,
+                 model_path: str,
+                 player: int = 1,
+                 board_shape: int = None,
+                 env: ReversiEnv = None,
+                 flatten_action: bool = False,
+                 deterministic: bool=True,
+                 only_valid: bool=True,
+                 mcts: bool=False,
+                 iterationLimit: int=None,
+                 timeLimit: int=None
+                 ):
+        super.__init__(player, board_shape, env, flatten_action)
+        self.model = PPO.load(model_path)
+        self.deterministic = deterministic
+        self.only_valid = only_valid
+        self.mcts = mcts
+        self.iterationLimit = iterationLimit
+        self.timeLimit = timeLimit
+
+    def predict(self, board: np.ndarray) -> Union[int, np.ndarray]:
+        obs = board
+        if self.only_valid:
+            obs = [board, self.env.get_valid((board, 1))]
+        # The model expects a batch of observations.
+        # Make a batch of 1 obs
+        obs = [obs]
+        action = self.model.predict(obs, deterministic=self.deterministic)[0]
+        if self.flatten_action:
+            return action
+        else:
+            return np.array([action // self.board_shape, action % self.board_shape])

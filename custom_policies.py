@@ -16,11 +16,15 @@ def sample_valid_actions(obs, distribution, deterministic=False, return_distribu
 
 def sample_actions(observation, distribution, deterministic=False, return_distribution=False):
     # If there's a Mask channel, use it to sample valid actions
-    if observation.shape[1] > 1:
-        actions = sample_valid_actions(observation, distribution.distribution, deterministic=deterministic, return_distribution=return_distribution)
-    else:  # Otherwise just sample all actions
-        actions = distribution.get_actions(deterministic=deterministic)
-    return actions
+    if has_mask_channel(observation):
+        return sample_valid_actions(observation, distribution.distribution, deterministic=deterministic,
+                                       return_distribution=return_distribution)
+    else:  # Otherwise just sample all actions according to distribution or return plain distribution
+        return distribution.get_actions(deterministic=deterministic) if not return_distribution else distribution
+
+
+def has_mask_channel(observation):
+    return len(observation.shape) > 3 and observation.shape[1] > 1
 
 
 class CustomActorCriticPolicy(ActorCriticPolicy):
