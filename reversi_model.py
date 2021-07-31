@@ -1,26 +1,26 @@
+from stable_baselines3 import PPO
+from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.vec_env import SubprocVecEnv
+
+from custom_features_extractor import CustomBoardExtractor
+from custom_policies import CustomActorCriticPolicy
 from multi_env import make_reversi_vec_env, SelfPlayEnv
 from players import RandomPlayer
-from stable_baselines3.common.callbacks import EvalCallback
-from stable_baselines3 import PPO
-from custom_policies import CustomActorCriticPolicy
-from actions_mask import ActionsMask
-from boardgame2 import ReversiEnv
-from stable_baselines3.common.vec_env.subproc_vec_env import SubprocVecEnv
 
 
 class CustomReversiModel:
 
-    def __init__(self, board_shape=8, n_envs=8, local_player=RandomPlayer, gamma=0.99, ent_coef=0.0, gae_lambda=0.95,
+    def __init__(self, board_shape=8, n_envs=8, local_player=RandomPlayer, n_steps=2048, gamma=0.99, ent_coef=0.0, gae_lambda=0.95,
                  n_epochs=10):
         self._create_train_env(board_shape, local_player, n_envs)
         self._create_eval_env(board_shape)
         self._create_callbacks(board_shape, ent_coef, gae_lambda, gamma, n_envs, n_epochs)
-        self._create_model(board_shape, ent_coef, gae_lambda, gamma, n_epochs)
+        self._create_model(n_steps, ent_coef, gae_lambda, gamma, n_epochs)
 
-    def learn(self, total_timesteps=int(1e5)):
+    def learn(self, total_timesteps=int(10e5)):
         self.model.learn(total_timesteps=total_timesteps, callback=self.callbacks)
 
-    def _create_model(self, board_shape, ent_coef, gae_lambda, gamma, n_epochs):
+    def _create_model(self, n_steps, ent_coef, gae_lambda, gamma, n_epochs):
         self.model = PPO(
             CustomActorCriticPolicy,
             self.env,
@@ -30,8 +30,8 @@ class CustomReversiModel:
             gae_lambda=gae_lambda,
             ent_coef=ent_coef,
             n_epochs=n_epochs,
-            device='cuda',
-            policy_kwargs={'actions_mask_func': ActionsMask(ReversiEnv(board_shape=board_shape))}
+            n_steps=n_steps,
+            policy_kwargs={'features_extractor_class': CustomBoardExtractor}
         )
 
     def _create_callbacks(self, board_shape, ent_coef, gae_lambda, gamma, n_envs, n_epochs):
@@ -50,10 +50,11 @@ class CustomReversiModel:
 
     def _create_eval_env(self, board_shape):
         self.eval_env = make_reversi_vec_env(
-            SelfPlayEnv, n_envs=1,
+            SelfPlayEnv, n_envs=1, vec_env_cls=SubprocVecEnv,
             env_kwargs={
                 'board_shape': board_shape,
-                'LocalPlayer': RandomPlayer
+                'LocalPlayer': RandomPlayer,
+                'mask_channel': True
             }
         )
 
@@ -62,6 +63,7 @@ class CustomReversiModel:
             SelfPlayEnv, n_envs=n_envs, vec_env_cls=SubprocVecEnv,
             env_kwargs={
                 'board_shape': board_shape,
-                'LocalPlayer': local_player
+                'LocalPlayer': local_player,
+                'mask_channel': True
             }
         )

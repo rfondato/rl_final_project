@@ -3,49 +3,36 @@ from stable_baselines3.common.policies import ActorCriticPolicy
 from typing import Tuple
 
 
+def sample_valid_actions(obs, distribution, deterministic=False, return_distribution=False):
+    inf = 10 ** 8
+    masks = (obs[:, 1, :, :].double() - 1) * inf
+    masked_logits = distribution.logits + masks.reshape(distribution.logits.shape)
+    if return_distribution:
+        return th.distributions.Categorical(logits=masked_logits)
+    if deterministic:
+        return th.argmax(masked_logits, axis=1)
+    return th.distributions.Categorical(logits=masked_logits).sample()
+
+
+def sample_actions(observation, distribution, deterministic=False, return_distribution=False):
+    # If there's a Mask channel, use it to sample valid actions
+    if observation.shape[1] > 1:
+        actions = sample_valid_actions(observation, distribution.distribution, deterministic=deterministic, return_distribution=return_distribution)
+    else:  # Otherwise just sample all actions
+        actions = distribution.get_actions(deterministic=deterministic)
+    return actions
+
+
 class CustomActorCriticPolicy(ActorCriticPolicy):
     def __init__(
             self,
-            *args,  # Todos los argumentos posicionales de ActorCriticPolicy
-            actions_mask_func=None,  # El nuevo argumento
-            **kwargs  # Todos los argumentos opcionales de ActorCriticPolicy
+            *args,
+            **kwargs
     ):
         super(CustomActorCriticPolicy, self).__init__(
             *args,
             **kwargs
         )
-        if actions_mask_func:
-            self.get_actions_mask = actions_mask_func
-
-    def sample_masked_actions(self, obs, distribution, deterministic=False, return_distribution=False):
-        # Dada las obs y distribuciones luego de evaluar la red neuronal, samplear solo las acciones válidas
-        # Las obs se usan para que con self.get_actions_mask se obtengan las acciones válidas
-        # las distribuciones son el resultado de evaluar la red neuronal y van a dar acciones no validas
-        # Generar una nueva distribución (del lado de los logits preferentemente) donde las acciones no válidas
-        # tengan probabildad nula de ser muestreadas
-        # Luego se modifican abajo los métodos
-        # _predict, forward y evaluate_actions
-        # Si tiene el flag de return_distribution en true devuelve la distribución nueva
-        # Caso contrario devuelve las acciones
-        # Para tener en cuenta, obs tiene dimensión [batch_size, channels, H, W]
-        # Recomendamos poner un print(obs.shape)
-        # y correr:
-        # obs = env.reset()
-        # actions, _ = model.predict(obs)
-        # Para sacarse las dudas
-
-        masks = 1 - self.get_actions_mask(obs)
-        masks = -masks * (10 ** 8)  # Numero negativo grande en los moviemientos invalidos
-
-        if th.is_tensor(distribution.logits):
-            masks = th.from_numpy(masks).to(self.device)
-
-        masked_logits = distribution.logits + masks.reshape(distribution.logits.shape[0], distribution.logits.shape[1])
-        if return_distribution:
-            return th.distributions.Categorical(logits=masked_logits)
-        if deterministic:
-            return th.argmax(masked_logits, axis=1)
-        return th.distributions.Categorical(logits=masked_logits).sample()
 
     def _predict(self, observation, deterministic=False):
         """
@@ -57,12 +44,7 @@ class CustomActorCriticPolicy(ActorCriticPolicy):
         latent_pi, _, latent_sde = self._get_latent(observation)
         distribution = self._get_action_dist_from_latent(latent_pi, latent_sde)
 
-        if self.get_actions_mask:
-            actions = self.sample_masked_actions(observation, distribution.distribution, deterministic=deterministic)
-        else:
-            actions = distribution.get_actions(deterministic=deterministic)
-
-        return actions
+        return sample_actions(observation, distribution, deterministic)
 
     def forward(self, obs: th.Tensor, deterministic: bool = False):
         """
@@ -76,11 +58,7 @@ class CustomActorCriticPolicy(ActorCriticPolicy):
         values = self.value_net(latent_vf)
         distribution = self._get_action_dist_from_latent(latent_pi, latent_sde=latent_sde)
 
-        if self.get_actions_mask:
-            actions = self.sample_masked_actions(obs, distribution.distribution, deterministic=deterministic)
-        else:
-            actions = distribution.get_actions(deterministic=deterministic)
-
+        actions = sample_actions(obs, distribution, deterministic)
         log_prob = distribution.log_prob(actions)
         return actions, values, log_prob
 
@@ -95,8 +73,8 @@ class CustomActorCriticPolicy(ActorCriticPolicy):
         """
         latent_pi, latent_vf, latent_sde = self._get_latent(obs)
         distribution = self._get_action_dist_from_latent(latent_pi, latent_sde)
-        distrib = self.sample_masked_actions(obs, distribution.distribution, return_distribution=True)
 
-        log_prob = distrib.log_prob(actions)
+        distribution = sample_actions(obs, distribution, return_distribution=True)
+        log_prob = distribution.log_prob(actions)
         values = self.value_net(latent_vf)
-        return values, log_prob, distrib.entropy()
+        return values, log_prob, distribution.entropy()
