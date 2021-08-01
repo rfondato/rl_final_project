@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Type
 
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
@@ -7,94 +8,122 @@ from stable_baselines3.common.vec_env import SubprocVecEnv
 from custom_features_extractor import CustomBoardExtractor
 from custom_policies import CustomActorCriticPolicy
 from multi_env import make_reversi_vec_env, SelfPlayEnv
-from players import RandomPlayer
+from players import RandomPlayer, BasePlayer
 
 
 class CustomReversiModel:
 
     def __init__(self,
                  board_shape: int = 8,
-                 n_envs: int =8,
-                 local_player=RandomPlayer,
-                 n_steps=2048,
-                 gamma=0.99,
-                 ent_coef=0.0,
-                 gae_lambda=0.95,
-                 n_epochs=10,
-                 load_from_path=None,
-                 use_previous_saved_params=False
+                 n_envs: int = 8,
+                 local_player: Type[BasePlayer] = RandomPlayer,
+                 n_steps: int = 2048,
+                 gamma: float = 0.99,
+                 ent_coef: float = 0.0,
+                 gae_lambda: float = 0.95,
+                 n_epochs: int = 10,
+                 load_from_path: str = None,
+                 use_previous_saved_params: bool = False,
+                 model_path_for_local: str = None
                  ):
-        if load_from_path is not None:
-            self._load_model(load_from_path, use_previous_saved_params, ent_coef, gae_lambda, gamma, n_epochs, n_steps)
-            board_shape = self.model.observation_space.shape[-1]
-        else:
-            self._create_model(n_steps, ent_coef, gae_lambda, gamma, n_epochs)
+        self.board_shape = board_shape
+        self.n_envs = n_envs
+        self.local_player = local_player
+        self.n_steps = n_steps
+        self.gamma = gamma
+        self.ent_coef = ent_coef
+        self.gae_lambda = gae_lambda
+        self.n_epochs = n_epochs
+        self.path = load_from_path
+        self.prev_params = use_previous_saved_params
+        self.local_path = model_path_for_local
+        self.new_model_save_path = self._get_model_save_path()
 
-        self._create_train_env(board_shape, local_player, n_envs)
-        self._create_eval_env(board_shape)
-        self._create_callbacks(board_shape)
+        self._create_train_env()
+        self._create_eval_env()
+        self._create_callbacks()
+
+        if load_from_path is not None:
+            self._load_model()
+        else:
+            self._create_new_model()
 
     def learn(self, total_timesteps=int(10e5)):
         self.model.learn(total_timesteps=total_timesteps, callback=self.callbacks)
 
-    def _load_model(self, load_from_path, use_previous_saved_params, ent_coef, gae_lambda, gamma, n_epochs, n_steps):
-        custom_objects = dict()
-        if not use_previous_saved_params:
-            custom_objects = {
-                "n_steps": n_steps,
-                "gamma": gamma,
-                "ent_coef": ent_coef,
-                "gae_lambda": gae_lambda,
-                "n_epochs": n_epochs
-            }
-        self.model = PPO.load(path=load_from_path, custom_objects=custom_objects)
+    def get_new_model_save_path(self):
+        return self.new_model_save_path
 
-    def _create_model(self, n_steps, ent_coef, gae_lambda, gamma, n_epochs):
+    def _create_new_model(self):
         self.model = PPO(
             CustomActorCriticPolicy,
             self.env,
             verbose=1,
             tensorboard_log='tensorboard_log',
-            gamma=gamma,
-            gae_lambda=gae_lambda,
-            ent_coef=ent_coef,
-            n_epochs=n_epochs,
-            n_steps=n_steps,
+            gamma=self.gamma,
+            gae_lambda=self.gae_lambda,
+            ent_coef=self.ent_coef,
+            n_epochs=self.n_epochs,
+            n_steps=self.n_steps,
             policy_kwargs={'features_extractor_class': CustomBoardExtractor}
         )
 
-    def _create_callbacks(self, board_shape):
-        prefix = 'Reversi_PPO'
-        suffix = datetime.now()
+    def _load_model(self):
+        custom_objects = dict()
+        if not self.prev_params:
+            custom_objects = {
+                "n_steps": self.n_steps,
+                "gamma": self.gamma,
+                "ent_coef": self.ent_coef,
+                "gae_lambda": self.gae_lambda,
+                "n_epochs": self.n_epochs
+            }
+        self.model = PPO.load(path=self.path, env=self.env, custom_objects=custom_objects)
 
-        model_name = f'{prefix}_{board_shape}by{board_shape}_{suffix}'
-
-        best_model_save_path = f'./models/{model_name}'
+    def _create_callbacks(self):
         self.callbacks = [EvalCallback(
             eval_env=self.eval_env,
             eval_freq=1_000,
             n_eval_episodes=500,
             deterministic=True,
             verbose=1,
-            best_model_save_path=best_model_save_path,
+            best_model_save_path=self.new_model_save_path
         )]
 
-    def _create_eval_env(self, board_shape):
+    def _create_eval_env(self):
         self.eval_env = make_reversi_vec_env(
-            SelfPlayEnv, n_envs=1, vec_env_cls=SubprocVecEnv,
+            SelfPlayEnv,
+            n_envs=1,
+            vec_env_cls=SubprocVecEnv,
             env_kwargs={
-                'board_shape': board_shape,
-                'LocalPlayer': RandomPlayer,
-                'mask_channel': True
+                'board_shape': self.board_shape,
+                'local_player_cls': self.local_player,
+                'mask_channel': True,
+                'local_player_kwargs': {
+                    'model_path': self.local_path
+                }
             }
         )
 
-    def _create_train_env(self, board_shape, local_player, n_envs):
+    def _create_train_env(self):
         self.env = make_reversi_vec_env(
-            SelfPlayEnv, n_envs=n_envs, vec_env_cls=SubprocVecEnv,
+            SelfPlayEnv,
+            n_envs=self.n_envs,
+            vec_env_cls=SubprocVecEnv,
             env_kwargs={
-                'board_shape': board_shape,
-                'LocalPlayer': local_player,
-                'mask_channel': True
+                'board_shape': self.board_shape,
+                'local_player_cls': self.local_player,
+                'mask_channel': True,
+                'local_player_kwargs': {
+                    'model_path': self.local_path
+                }
             }
         )
+
+    def _get_model_save_path(self):
+        prefix = 'Reversi_PPO'
+        suffix = str(datetime.now()).replace(" ", "_")
+
+        model_name = f'{prefix}_{self.board_shape}by{self.board_shape}_{suffix}'
+
+        return f'./models/{model_name}'

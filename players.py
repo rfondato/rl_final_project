@@ -1,7 +1,7 @@
-from typing import Union
+from typing import Union, Optional, Dict, Any
 
 import numpy as np
-from boardgame2 import ReversiEnv
+from boardgame2 import BoardGameEnv
 from abc import ABC, abstractmethod
 
 from stable_baselines3 import PPO
@@ -10,14 +10,12 @@ from stable_baselines3 import PPO
 class BasePlayer(ABC):
     def __init__(self,
                  player: int = 1,
-                 board_shape: int = None,
-                 env: ReversiEnv = None,
+                 env: BoardGameEnv = None,
                  flatten_action: bool = False
                  ):
-        if (env is None) and (board_shape is None):
-            print("board_shape and env can't be both None")
         if env is None:
-            env = ReversiEnv(board_shape=board_shape)
+            print("Environment cannot be None")
+
         self.env = env
         self.player = player  # player number. 1 o -1
         self.flatten_action = flatten_action
@@ -36,11 +34,11 @@ class BasePlayer(ABC):
 class GreedyPlayer(BasePlayer):
     def __init__(self,
                  player: int = 1,
-                 board_shape: int = None,
-                 env: ReversiEnv = None,
-                 flatten_action: bool = False
+                 env: BoardGameEnv = None,
+                 flatten_action: bool = False,
+                 **custom_kwargs: Optional[Dict[str, Any]]  # Make subclass constructor generic
                  ):
-        super().__init__(player, board_shape, env, flatten_action)
+        super().__init__(player, env, flatten_action)
 
     def predict(self, board: np.ndarray) -> Union[int, np.ndarray]:
         valid_actions = np.argwhere(self.env.get_valid((board, self.player)) == 1)
@@ -63,11 +61,11 @@ class GreedyPlayer(BasePlayer):
 class RandomPlayer(BasePlayer):
     def __init__(self,
                  player: int = 1,
-                 board_shape: int = None,
-                 env: ReversiEnv = None,
-                 flatten_action: bool = False
+                 env: BoardGameEnv = None,
+                 flatten_action: bool = False,
+                 **custom_kwargs: Optional[Dict[str, Any]]  # Make subclass constructor generic
                  ):
-        super().__init__(player, board_shape, env, flatten_action)
+        super().__init__(player, env, flatten_action)
 
     def predict(self, board: np.ndarray) -> Union[int, np.ndarray]:
         valid_actions = np.argwhere(self.env.get_valid((board, self.player)) == 1)
@@ -84,11 +82,12 @@ class RandomPlayer(BasePlayer):
 class DictPolicyPlayer(BasePlayer):
     def __init__(self,
                  player: int = 1,
-                 board_shape: int = None,
-                 env: ReversiEnv = None,
+                 env: BoardGameEnv = None,
                  flatten_action: bool = False,
-                 dict_folder: str = 'mdp/pi_func_only_winner.npy'):
-        super().__init__(player, board_shape, env, flatten_action)
+                 dict_folder: str = 'mdp/pi_func_only_winner.npy',
+                 **custom_kwargs: Optional[Dict[str, Any]]  # Make subclass constructor generic
+                 ):
+        super().__init__(player, env, flatten_action)
         self.pi_dict = np.load(dict_folder, allow_pickle=True).item()
 
     def predict(self, board: np.ndarray) -> Union[int, np.ndarray]:
@@ -102,18 +101,22 @@ class DictPolicyPlayer(BasePlayer):
 
 class TorchPlayer(BasePlayer):
     def __init__(self,
-                 model_path: str,
                  player: int = 1,
-                 board_shape: int = None,
-                 env: ReversiEnv = None,
+                 env: BoardGameEnv = None,
                  flatten_action: bool = False,
-                 deterministic: bool=True,
-                 only_valid: bool=True,
-                 mcts: bool=False,
-                 iterationLimit: int=None,
-                 timeLimit: int=None
+                 model_path: str = None,
+                 deterministic: bool = True,
+                 only_valid: bool = True,
+                 mcts: bool = False,
+                 iterationLimit: int = None,
+                 timeLimit: int = None,
+                 **custom_kwargs: Optional[Dict[str, Any]]  # Make subclass constructor generic
                  ):
-        super.__init__(player, board_shape, env, flatten_action)
+        super().__init__(player, env, flatten_action)
+
+        if model_path is None:
+            raise Exception("model_path cannot be None")
+
         self.model = PPO.load(model_path)
         self.deterministic = deterministic
         self.only_valid = only_valid
@@ -122,9 +125,9 @@ class TorchPlayer(BasePlayer):
         self.timeLimit = timeLimit
 
     def predict(self, board: np.ndarray) -> Union[int, np.ndarray]:
-        obs = board
+        obs = board if (self.player == 1) else -board
         if self.only_valid:
-            obs = [board, self.env.get_valid((board, 1))]
+            obs = [obs, self.env.get_valid((obs, 1))]
         # The model expects a batch of observations.
         # Make a batch of 1 obs
         obs = [obs]

@@ -1,10 +1,12 @@
 import os
+from typing import Type, Optional, Dict, Any
 
 import gym
 import numpy as np
 from boardgame2 import ReversiEnv
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv
+from players import BasePlayer, RandomPlayer
 
 
 def make_reversi_vec_env(
@@ -18,7 +20,7 @@ def make_reversi_vec_env(
         vec_env_cls=None,
         vec_env_kwargs=None,
         monitor_kwargs=None,
-        wrapper_kwargs=None,
+        wrapper_kwargs=None
 ):
     env_kwargs = {} if env_kwargs is None else env_kwargs
     vec_env_kwargs = {} if vec_env_kwargs is None else vec_env_kwargs
@@ -55,17 +57,23 @@ def make_reversi_vec_env(
 
 
 class SelfPlayEnv(ReversiEnv):
-    def __init__(self, board_shape=8, LocalPlayer=None, verbose=0, mask_channel=False):
+    def __init__(self,
+                 board_shape: int = 8,
+                 local_player_cls: Type[BasePlayer] = RandomPlayer,
+                 verbose: int = 0,
+                 mask_channel: bool = False,
+                 local_player_kwargs: Optional[Dict[str, Any]] = None
+                 ):
+        super(SelfPlayEnv, self).__init__(board_shape=board_shape)
         self.players = [-1, 1]
         self.verbose = verbose
         self.mask_channel = mask_channel
-
-        self.local_player = LocalPlayer(board_shape=board_shape, flatten_action=False)
+        self.local_player = local_player_cls(player=-1, env=self, flatten_action=False,
+                                             **local_player_kwargs if local_player_kwargs is not None else {})
         self.board_shape = board_shape
-        super(SelfPlayEnv, self).__init__(board_shape=board_shape)
 
         self.action_space = gym.spaces.Discrete(board_shape ** 2)
-        self.observation_space = gym.spaces.Box(-1, 1, (2, board_shape, board_shape))  # aca
+        self.observation_space = gym.spaces.Box(-1, 1, (2, board_shape, board_shape))
 
     def play(self, observation):
         action = self.local_player.predict(observation)
