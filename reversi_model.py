@@ -21,22 +21,33 @@ class CustomReversiModel:
                  gamma: float = 0.99,
                  ent_coef: float = 0.0,
                  gae_lambda: float = 0.95,
+                 batch_size: int = 64,
                  n_epochs: int = 10,
                  load_from_path: str = None,
                  use_previous_saved_params: bool = False,
-                 model_path_for_local: str = None
+                 path_local_player: str = None,
+                 device_local_player: str = "auto"
                  ):
         self.board_shape = board_shape
+
+        # Train Params
         self.n_envs = n_envs
-        self.local_player = local_player
         self.n_steps = n_steps
         self.gamma = gamma
         self.ent_coef = ent_coef
         self.gae_lambda = gae_lambda
         self.n_epochs = n_epochs
+        self.batch_size = batch_size
+
+        # Model to load
         self.path = load_from_path
         self.prev_params = use_previous_saved_params
-        self.local_path = model_path_for_local
+
+        # Opponent
+        self.local_player = local_player
+        self.local_path = path_local_player
+        self.device_local = device_local_player
+
         self.new_model_save_path = self._get_model_save_path()
 
         self._create_train_env()
@@ -65,6 +76,7 @@ class CustomReversiModel:
             ent_coef=self.ent_coef,
             n_epochs=self.n_epochs,
             n_steps=self.n_steps,
+            batch_size=self.batch_size,
             policy_kwargs={'features_extractor_class': CustomBoardExtractor}
         )
 
@@ -115,7 +127,8 @@ class CustomReversiModel:
                 'local_player_cls': self.local_player,
                 'mask_channel': True,
                 'local_player_kwargs': {
-                    'model_path': self.local_path
+                    'model_path': self.local_path,
+                    'device': self.device_local
                 }
             }
         )

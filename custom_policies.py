@@ -18,7 +18,7 @@ def sample_actions(observation, distribution, deterministic=False, return_distri
     # If there's a Mask channel, use it to sample valid actions
     if has_mask_channel(observation):
         return sample_valid_actions(observation, distribution.distribution, deterministic=deterministic,
-                                       return_distribution=return_distribution)
+                                    return_distribution=return_distribution)
     else:  # Otherwise just sample all actions according to distribution or return plain distribution
         return distribution.get_actions(deterministic=deterministic) if not return_distribution else distribution
 

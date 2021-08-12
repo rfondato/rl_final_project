@@ -1,10 +1,13 @@
+from abc import ABC, abstractmethod
 from typing import Union, Optional, Dict, Any
 
 import numpy as np
 from boardgame2 import BoardGameEnv
-from abc import ABC, abstractmethod
-
 from stable_baselines3 import PPO
+
+from multi_process_mcts import MultiProcessMonteCarlo, model_policy
+from reversi_state import CustomReversiState
+import torch as th
 
 
 class BasePlayer(ABC):
@@ -30,6 +33,8 @@ class BasePlayer(ABC):
                 If flatten_action is True, it returns an int with the slot number.
         """
 
+    def __str__(self):
+        return self.__class__.__name__
 
 class GreedyPlayer(BasePlayer):
     def __init__(self,
@@ -108,8 +113,9 @@ class TorchPlayer(BasePlayer):
                  deterministic: bool = True,
                  only_valid: bool = True,
                  mcts: bool = False,
-                 iterationLimit: int = None,
-                 timeLimit: int = None,
+                 levelLimit: int = None,
+                 device: str = 'auto',
+                 mtcs_n_processes: int = None,
                  **custom_kwargs: Optional[Dict[str, Any]]  # Make subclass constructor generic
                  ):
         super().__init__(player, env, flatten_action)
@@ -117,22 +123,45 @@ class TorchPlayer(BasePlayer):
         if model_path is None:
             raise Exception("model_path cannot be None")
 
-        self.model = PPO.load(model_path)
+        self.model = PPO.load(model_path, device=device)
         self.deterministic = deterministic
         self.only_valid = only_valid
         self.mcts = mcts
-        self.iterationLimit = iterationLimit
-        self.timeLimit = timeLimit
+        self.levelLimit = levelLimit
+        self.mtcs_n_processes = mtcs_n_processes
 
     def predict(self, board: np.ndarray) -> Union[int, np.ndarray]:
-        obs = board if (self.player == 1) else -board
-        if self.only_valid:
-            obs = [obs, self.env.get_valid((obs, 1))]
-        # The model expects a batch of observations.
-        # Make a batch of 1 obs
-        obs = [obs]
-        action = self.model.predict(obs, deterministic=self.deterministic)[0]
-        if self.flatten_action:
-            return action
-        else:
-            return np.array([action // self.board_shape, action % self.board_shape])
+        with th.no_grad():
+            if self.mcts:
+                action = self._get_action_with_mcts(board)
+                action = action.action
+                if self.flatten_action:
+                    return action[0] * self.board_shape + action[1]
+                else:
+                    return action
+            else:
+                obs = self.player * board
+                if self.only_valid:
+                    obs = [obs, self.env.get_valid((obs, 1))]
+                # The model expects a batch of observations.
+                # Make a batch of 1 obs
+                obs = [obs]
+                action = self.model.predict(obs, deterministic=self.deterministic)[0]
+
+                if self.flatten_action:
+                    return action
+                else:
+                    return np.array([action // self.board_shape, action % self.board_shape])
+
+    def _get_action_with_mcts(self, board: np.ndarray) -> Union[int]:
+        searcher = MultiProcessMonteCarlo(levelLimit=self.levelLimit,
+                                          n_processes=self.mtcs_n_processes,
+                                          explorationConstant=0.0,
+                                          rolloutPolicy=model_policy(self.model))
+
+        state = CustomReversiState(self.env, (board, self.player))
+        return searcher.search(initialState=state)
+
+    def __str__(self):
+        monte_carlo = f"(With Monte-Carlo, Prediction Depth:{self.levelLimit})" if self.mcts else "(No Monte-Carlo)"
+        return self.__class__.__name__ + monte_carlo

@@ -1,6 +1,8 @@
-from boardgame2 import ReversiEnv
+from typing import Type, Tuple
+
 import numpy as np
-from copy import deepcopy
+from boardgame2 import BoardGameEnv
+
 
 class Action():
     def __init__(self, action, player):
@@ -19,43 +21,42 @@ class Action():
     def __hash__(self):
         return hash((self.action[0], self.action[1]))
     
-class ReversiState():
-    def __init__(self, board_shape=6):
-        self.env = ReversiEnv(board_shape=board_shape)
-        self.board, self.currentPlayer = self.env.reset()
-        self.done = False
-    
+
+class CustomReversiState:
+    def __init__(self,
+                 env: BoardGameEnv,
+                 currentState: Tuple[np.ndarray, int],
+                 reward: float = None,
+                 done: bool = False
+                 ):
+        self.board, self.currentPlayer = currentState
+        self.env = env
+        self.reward = reward
+        self.done = done
+
+    def __eq__(self, other):
+        return (self.board == other.board).all()
+
+    def get_actions_mask(self):
+        return self.env.get_valid((self.board, self.currentPlayer))
+
     def getCurrentPlayer(self):
         return self.currentPlayer
-    
-    def get_actions_mask(self):
-        return self.env.get_valid((self.board, self.currentPlayer)).reshape(-1)
 
     def getPossibleActions(self):
-        possibleActions = []
-#         valid_actions = np.argwhere(self.board == 0)
+        possible_actions = []
         valid_actions = np.argwhere(self.env.get_valid((self.board, self.currentPlayer)))
         for action in valid_actions:
-            possibleActions.append(Action(action, self.currentPlayer))
-        return possibleActions
-    
+            possible_actions.append(Action(action, self.currentPlayer))
+        return possible_actions
+
     def takeAction(self, action):
-        newState = deepcopy(self)
-        (newState.board, newState.currentPlayer), newState.reward, newState.done, info = self.env.next_step((self.board, self.currentPlayer), (action.action[0], action.action[1]))
-        return newState
-    
+        state, reward, done, _ = self.env.next_step(
+            (self.board, self.currentPlayer), (action.action[0], action.action[1]))
+        return CustomReversiState(self.env, state, reward, done)
+
     def isTerminal(self):
         return self.done
-    
+
     def getReward(self):
         return self.reward
-    
-    def encode_state(self):
-        matrix = np.ones(self.board.shape + (3,))
-        matrix[:,:,0] = (self.board == 1) * 1.0
-        matrix[:,:,1] = (self.board == -1) * 1.0
-#         matrix[:,:,2] = self.env.get_valid((self.board, self.currentPlayer))
-        matrix[:,:,2] = matrix[:,:,2] * (self.currentPlayer == 1)
-
-        observation = matrix.transpose((2, 0, 1))
-        return observation

@@ -1,5 +1,6 @@
+import sys
+
 import numpy as np
-import time
 from boardgame2 import BoardGameEnv
 
 from players import BasePlayer
@@ -114,14 +115,17 @@ class Arena:
 
     def _print_init(self):
         print()
-        print(f"MATCH: {self.player_1.__class__.__name__} vs {self.player_2.__class__.__name__}")
+        print(f"MATCH: {self.player_1} vs {self.player_2}")
         print()
 
     def _print_game_stats(self, game: int, n_games: int):
-        p1_wins = round(self.player_1_stats.wins / (game + 1) * 100, 2)
-        p2_wins = round(self.player_2_stats.wins / (game + 1) * 100, 2)
-        print(f"Playing n:{game + 1}/{n_games} Wins(player 1/ player 2):{p1_wins}%/{p2_wins}%", end="\r")
-        time.sleep(0.05)
+        prev_game = game if game > 0 else 1
+        p1_wins = round(self.player_1_stats.wins / prev_game * 100, 2)
+        p2_wins = round(self.player_2_stats.wins / prev_game * 100, 2)
+        ties = round(self.player_1_stats.ties / prev_game * 100, 2)
+        print("\r", end="")
+        sys.stdout.write("\033[K")
+        print(f"Playing n:{game + 1}/{n_games} \t Wins(player 1/ player 2):{p1_wins}%/{p2_wins}% \t Ties:{ties}%", end="")
 
     def _print_results(self):
         winner_num = 1 if (self.winner == self.player_1) else 2
