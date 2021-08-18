@@ -61,8 +61,9 @@ class CustomActorCriticPolicy(ActorCriticPolicy):
         # Evaluate the values for the given observations
         values = self.value_net(latent_vf)
         distribution = self._get_action_dist_from_latent(latent_pi, latent_sde=latent_sde)
+        distribution = sample_actions(obs, distribution, return_distribution=True)
 
-        actions = sample_actions(obs, distribution, deterministic)
+        actions = distribution.sample()
         log_prob = distribution.log_prob(actions)
         return actions, values, log_prob
 

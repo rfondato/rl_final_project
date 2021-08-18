@@ -5,7 +5,7 @@ import torch.nn
 import torch as th
 
 
-class CustomBoardExtractor(BaseFeaturesExtractor):
+class MaskedBoardExtractor(BaseFeaturesExtractor):
 
     def __init__(self, observation_space: gym.Space):
         super().__init__(observation_space, int(get_flattened_obs_dim(observation_space) / 2))

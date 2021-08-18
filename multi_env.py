@@ -29,7 +29,7 @@ def make_reversi_vec_env(
 
     def make_env(rank):
         def _init():
-            env = env_class(**env_kwargs)
+            env = env_class(**env_kwargs[rank]) if isinstance(env_kwargs, list) else env_class(**env_kwargs)
 
             if seed is not None:
                 env.seed(seed + rank)
@@ -92,7 +92,7 @@ class SelfPlayEnv(ReversiEnv):
     def reset(self):
         self.n_step = 0
         self.local_player_num = np.random.choice(self.players)
-        self.local_player.player = self.local_player_num
+        self.local_player.setPlayer(self.local_player_num)
         self.observation, self.current_player_num = super(SelfPlayEnv, self).reset()
         self.allow_pass = True
         if self.verbose:

@@ -4,7 +4,10 @@ import time
 import math
 import random
 import numpy as np
-from reversi_state import Action
+from stable_baselines3.common.base_class import BaseAlgorithm
+
+from reversi_state import Action, ReversiState
+
 
 def randomPolicy(state):
     while not state.isTerminal():
@@ -20,15 +23,34 @@ def modelPolicy(model):
     def sampleModel(state):
         while not state.isTerminal():
             try:
-                action_probs = model.eval()(state.board.reshape(1, 1, *state.board.shape)).detach().numpy()[0] * state.get_actions_mask()
-                action_probs = action_probs/action_probs.sum()
+                action_probs = model.eval()(state.board.reshape(1, 1, *state.board.shape)).detach().numpy()[
+                                   0] * state.get_actions_mask()
+                action_probs = action_probs / action_probs.sum()
                 action = np.random.choice(len(action_probs), p=action_probs)
                 coded_action = [action % state.board.shape[0], action // state.board.shape[0]]
-                action = Action(coded_action , state.getCurrentPlayer())
+                action = Action(coded_action, state.getCurrentPlayer())
             except IndexError:
                 raise Exception("Non-terminal state has no possible actions: " + str(state))
             state = state.takeAction(action)
         return state.getReward()
+
+    return sampleModel
+
+
+def custom_mcts_policy(model: BaseAlgorithm = None):
+    def sampleModel(state):
+        while not state.isTerminal():
+            try:
+                obs = [state.board * state.getCurrentPlayer(), state.get_actions_mask()]
+                # Sample actions using the model predict's probabilities
+                action = model.predict([obs], deterministic=False)[0][0]
+                coded_action = [action // state.board.shape[0], action % state.board.shape[0]]
+                action = Action(coded_action, state.getCurrentPlayer())
+            except IndexError:
+                raise Exception("Non-terminal state has no possible actions: " + str(state))
+            state = state.takeAction(action)
+        return state.getReward()
+
     return sampleModel
 
 
@@ -43,30 +65,42 @@ class treeNode():
         self.children = {}
 
     def __str__(self):
-        s=[]
-        s.append("totalReward: %s"%(self.totalReward))
-        s.append("numVisits: %d"%(self.numVisits))
-        s.append("isTerminal: %s"%(self.isTerminal))
-        s.append("possibleActions: %s"%(self.children.keys()))
-        return "%s: {%s}"%(self.__class__.__name__, ', '.join(s))
+        s = []
+        s.append("totalReward: %s" % (self.totalReward))
+        s.append("numVisits: %d" % (self.numVisits))
+        s.append("isTerminal: %s" % (self.isTerminal))
+        s.append("possibleActions: %s" % (self.children.keys()))
+        return "%s: {%s}" % (self.__class__.__name__, ', '.join(s))
+
+    def __eq__(self, obj):
+        return isinstance(obj, treeNode) and obj.state == self.state
+
 
 class mcts():
-    def __init__(self, timeLimit=None, iterationLimit=None, explorationConstant=1 / math.sqrt(2),
+    def __init__(self, timeLimit=None, iterationLimit=None, levelLimit=None,
+                 explorationConstant=1 / math.sqrt(2),
                  rolloutPolicy=randomPolicy):
-        if timeLimit != None:
-            if iterationLimit != None:
-                raise ValueError("Cannot have both a time limit and an iteration limit")
+        if ((timeLimit is not None) + (iterationLimit is not None) + (levelLimit is not None)) != 1:
+            raise ValueError("No limit or more than one limit was set. "
+                             "Only one limit type should be chosen: iteration, level or time")
+
+        if timeLimit is not None:
             # time taken for each MCTS search in milliseconds
             self.timeLimit = timeLimit
             self.limitType = 'time'
-        else:
-            if iterationLimit == None:
-                raise ValueError("Must have either a time limit or an iteration limit")
+        elif iterationLimit is not None:
             # number of iterations of the search
             if iterationLimit < 1:
-                raise ValueError("Iteration limit must be greater than one")
+                raise ValueError("Iteration limit must be greater or equal to one")
             self.searchLimit = iterationLimit
             self.limitType = 'iterations'
+        else:
+            # number of levels of the tree to explore
+            if levelLimit < 1:
+                raise ValueError("Level limit must be greater or equal to one")
+            self.searchLimit = levelLimit
+            self.currentLevel = 1
+            self.limitType = 'levels'
         self.explorationConstant = explorationConstant
         self.rollout = rolloutPolicy
 
@@ -77,54 +111,52 @@ class mcts():
             timeLimit = time.time() + self.timeLimit / 1000
             while time.time() < timeLimit:
                 self.executeRound()
-        else:
+        elif self.limitType == 'iterations':
             for i in range(self.searchLimit):
                 self.executeRound()
+        elif self.limitType == 'levels':
+            while self.currentLevel <= self.searchLimit:
+                self.executeRound()
 
-        
         if needDetails:
             node_actions, bestChild = self.getBestChild(self.root, 0, verbose=needDetails)
-            #return {"action": action, "expectedReward": bestChild.totalReward / bestChild.numVisits}
-            action=(action for action, node in self.root.children.items() if node is bestChild).__next__()
+            # return {"action": action, "expectedReward": bestChild.totalReward / bestChild.numVisits}
+            action = (action for action, node in self.root.children.items() if node is bestChild).__next__()
             return node_actions, action
         else:
             bestChild = self.getBestChild(self.root, 0, verbose=needDetails)
-            action=(action for action, node in self.root.children.items() if node is bestChild).__next__()
+            action = (action for action, node in self.root.children.items() if node is bestChild).__next__()
             return action
 
     def executeRound(self):
         """
             execute a selection-expansion-simulation-backpropagation round
         """
+        self.currentLevel = 1
         node = self.selectNode(self.root)
-#         print(node.state.board)
-#         print(node.isTerminal)
-#         print('rollout')
         reward = self.rollout(node.state)
-#         print('backpropogate')
         self.backpropogate(node, reward)
-#         print()
 
     def selectNode(self, node):
         while not node.isTerminal:
-#             print('not terminal')
             if node.isFullyExpanded:
                 node = self.getBestChild(node, self.explorationConstant)
             else:
-#                 print('not isFullyExpanded')
-                return self.expand(node)
+                new_node = self.expand(node)
+                self.currentLevel += int(node.isFullyExpanded)
+                return new_node
         return node
 
     def expand(self, node):
         actions = node.state.getPossibleActions()
         for action in actions:
-#             print(action)
+            #             print(action)
             if action not in node.children:
                 newNode = treeNode(node.state.takeAction(action), node)
-#                 print('descubre nodo')
+                #                 print('descubre nodo')
                 node.children[action] = newNode
                 if len(actions) == len(node.children):
-#                     print('fullyexpanded')
+                    #                     print('fullyexpanded')
                     node.isFullyExpanded = True
                 return newNode
 
@@ -140,22 +172,30 @@ class mcts():
         bestValue = float("-inf")
         bestNodes = []
         node_actions = {}
-#         total_visits = 0
-#         total_reward = 0
+        #         total_visits = 0
+        #         total_reward = 0
         for key, child in node.children.items():
             nodeValue = node.state.getCurrentPlayer() * child.totalReward / child.numVisits + explorationValue * math.sqrt(
                 2 * math.log(node.numVisits) / child.numVisits)
-#             total_visits += child.numVisits
-#             total_reward += child.totalReward * node.state.getCurrentPlayer()
+            #             total_visits += child.numVisits
+            #             total_reward += child.totalReward * node.state.getCurrentPlayer()
             if verbose:
-                node_actions[(key.action[0], key.action[1], key.player)] = (nodeValue, child.totalReward, child.numVisits, (child.totalReward + child.numVisits)/2/child.numVisits)
+                node_actions[(key.action[0], key.action[1], key.player)] = (
+                    nodeValue, child.totalReward, child.numVisits,
+                    (child.totalReward + child.numVisits) / 2 / child.numVisits)
             if nodeValue > bestValue:
                 bestValue = nodeValue
                 bestNodes = [child]
             elif nodeValue == bestValue:
                 bestNodes.append(child)
         if verbose:
-#             print(node_actions)
-#             print(total_visits, total_reward)
+            #             print(node_actions)
+            #             print(total_visits, total_reward)
             return node_actions, random.choice(bestNodes)
         return random.choice(bestNodes)
+
+
+if __name__ == "__main__":
+    state = ReversiState(board_shape=4)
+    searcher = mcts(iterationLimit=500, explorationConstant=0.8, rolloutPolicy=randomPolicy)
+    resultDict, action = searcher.search(initialState=state, needDetails=True)
