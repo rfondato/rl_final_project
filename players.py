@@ -1,25 +1,25 @@
-import random
+import os
+import uuid
 from abc import ABC, abstractmethod
 from typing import Union, Optional, Dict, Any
 
 import numpy as np
-from boardgame2 import BoardGameEnv, ReversiEnv
+from boardgame2 import BoardGameEnv
 from stable_baselines3 import PPO
 
 from multi_process_mcts import MultiProcessMonteCarlo, model_policy
 from reversi_state import CustomReversiState
-import os
 
 
 class BasePlayer(ABC):
     def __init__(self,
                  player: int = 1,
                  env: BoardGameEnv = None,
-                 flatten_action: bool = False
+                 flatten_action: bool = False,
+                 name: str = None
                  ):
-        if env is None:
-            print("Environment cannot be None")
-
+        self.id = uuid.uuid4()
+        self.name = name if name is not None else self.__class__.__name__
         self.env = env
         self.player = player  # player number. 1 o -1
         self.flatten_action = flatten_action
@@ -34,11 +34,11 @@ class BasePlayer(ABC):
                 If flatten_action is True, it returns an int with the slot number.
         """
 
-    def setPlayer(self, new_player):
-        self.player = new_player
-
     def __str__(self):
-        return self.__class__.__name__
+        return self.name
+
+    def __eq__(self, other):
+        return self.id == other.id
 
 
 class GreedyPlayer(BasePlayer):
@@ -123,10 +123,11 @@ class TorchPlayer(BasePlayer):
                  mtcs_n_processes: int = None,
                  **custom_kwargs: Optional[Dict[str, Any]]  # Make subclass constructor generic
                  ):
-        super().__init__(player, env, flatten_action)
 
         if model_path is None:
             raise Exception("model_path cannot be None")
+
+        super().__init__(player, env, flatten_action, os.path.splitext(os.path.basename(model_path))[0])
 
         self.model = PPO.load(model_path, device=device)
         self.model_path = model_path
@@ -171,71 +172,5 @@ class TorchPlayer(BasePlayer):
         return searcher.search(initialState=state)
 
     def __str__(self):
-        monte_carlo = f"(With Monte-Carlo, Prediction Depth:{self.levelLimit})" if self.mcts else "(No Monte-Carlo)"
-        return self.__class__.__name__ + monte_carlo
-
-
-class RandomStrategyPlayer(BasePlayer):
-    def __init__(self,
-                 player: int = 1,
-                 env: BoardGameEnv = None,
-                 flatten_action: bool = False,
-                 only_valid: bool = True,
-                 model_path: str = None,
-                 deterministic: bool = True,
-                 device: str = 'auto',
-                 verbose: bool = False,
-                 **custom_kwargs: Optional[Dict[str, Any]]  # Make subclass constructor generic
-                 ):
-        super().__init__(player, env, flatten_action)
-
-        if model_path is None and verbose:
-            print("No model_path set. Strategies will be Random or Greedy.")
-
-        if model_path is not None and not os.path.isdir(model_path):
-            raise Exception("model_path should be a directory")
-
-        self.model_path = model_path
-        self.only_valid = only_valid
-        self.deterministic = deterministic
-        self.device = device
-        self.strategy = self._create_strategy()
-        if verbose:
-            print(self)
-
-    def predict(self, board: np.ndarray) -> Union[int, np.ndarray]:
-        return self.strategy.predict(board)
-
-    def setPlayer(self, new_player):
-        super().setPlayer(new_player)
-        self.strategy.setPlayer(new_player)
-
-    def __str__(self):
-        model_path = f" (Path: {self.strategy.get_model_path()})" if isinstance(self.strategy, TorchPlayer) else ""
-        return self.__class__.__name__ + " - Selected Strategy: " + self.strategy.__class__.__name__ + model_path
-
-    def _create_strategy(self):
-        strategies = ["random", "greedy"]
-        if self.model_path is not None:
-            strategies += [f for f in os.listdir(self.model_path) if os.path.isfile(os.path.join(self.model_path, f))]
-
-        strategy = random.choice(strategies)
-
-        if strategy == "random":
-            return RandomPlayer(player=self.player, env=self.env, flatten_action=self.flatten_action)
-        elif strategy == "greedy":
-            return GreedyPlayer(player=self.player, env=self.env, flatten_action=self.flatten_action)
-        else:
-            return TorchPlayer(player=self.player,
-                               env=self.env,
-                               flatten_action=self.flatten_action,
-                               model_path=os.path.join(self.model_path, strategy),
-                               deterministic=self.deterministic,
-                               only_valid=self.only_valid,
-                               device=self.device
-                               )
-
-
-if __name__ == "__main__":
-    player = RandomStrategyPlayer(player=1, env=ReversiEnv(board_shape=8), model_path="./training_opps/")
-    print(player)
+        monte_carlo = f"- MCTS" if self.mcts else ""
+        return f"{self.__class__.__name__}({self.name}{monte_carlo})"

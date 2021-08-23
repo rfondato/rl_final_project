@@ -32,10 +32,10 @@ class PlayerStats:
         self.wins_as_second += (reward < 0) * int(not plays_first)
         self.ties += (reward == 0)
 
-    def print(self):
+    def __str__(self):
         total_games = self.plays_as_first + self.plays_as_second
-        header = f'####### STATS FOR PLAYER: {self.player_num} OF TYPE: {self.player.__class__.__name__} #######'
-        print(f"""
+        header = f'####### STATS FOR PLAYER: {self.player_num} - {str(self.player)} #######'
+        return f"""
 {header}
 
 Wins as first: {self.wins_as_first / self.plays_as_first}
@@ -47,7 +47,7 @@ Avg game duration: {self.total_steps / total_games}
 
 {"#" * len(header)}
             
-        """)
+        """
 
 
 class Arena:
@@ -88,8 +88,8 @@ class Arena:
             self._print_results()
 
     def print_players_stats(self):
-        self.player_1_stats.print()
-        self.player_2_stats.print()
+        print(self.player_1_stats)
+        print(self.player_2_stats)
 
     def get_winner(self):
         return self.winner
@@ -128,10 +128,9 @@ class Arena:
         print(f"Playing n:{game + 1}/{n_games} \t Wins(player 1/ player 2):{p1_wins}%/{p2_wins}% \t Ties:{ties}%", end="")
 
     def _print_results(self):
-        winner_num = 1 if (self.winner == self.player_1) else 2
         print()
         print()
-        print(f"AND THE WINNER IS... PLAYER {winner_num}!!, of type {self.winner.__class__.__name__}")
+        print(f"THE WINNER IS {self.winner}!")
         print()
 
     def _calculate_winner(self):

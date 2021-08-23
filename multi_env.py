@@ -92,7 +92,7 @@ class SelfPlayEnv(ReversiEnv):
     def reset(self):
         self.n_step = 0
         self.local_player_num = np.random.choice(self.players)
-        self.local_player.setPlayer(self.local_player_num)
+        self.local_player.player = self.local_player_num
         self.observation, self.current_player_num = super(SelfPlayEnv, self).reset()
         self.allow_pass = True
         if self.verbose:

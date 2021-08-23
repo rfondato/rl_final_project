@@ -1,10 +1,11 @@
 import os
 import random
 from datetime import datetime
-from typing import Type, Union
+from typing import Type, Union, Optional, List, Dict
 
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
+from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 from stable_baselines3.common.vec_env import SubprocVecEnv
 
 from custom_features_extractor import CustomBoardExtractor
@@ -26,8 +27,10 @@ class CustomReversiModel:
                  gae_lambda: float = 0.95,
                  batch_size: int = 64,
                  n_epochs: int = 10,
+                 net_arch: Optional[List[Union[int, Dict[str, List[int]]]]] = None,
                  load_from_path: str = None,
                  use_previous_saved_params: bool = False,
+                 features_extractor: BaseFeaturesExtractor = CustomBoardExtractor,
                  path_local_player: str = None,
                  device_local_player: str = "auto",
                  verbose: bool = False
@@ -47,6 +50,8 @@ class CustomReversiModel:
         self.gae_lambda = gae_lambda
         self.n_epochs = n_epochs
         self.batch_size = batch_size
+        self.features_extractor = features_extractor
+        self.net_arch = net_arch
 
         # Model to load
         self.path = load_from_path
@@ -59,11 +64,12 @@ class CustomReversiModel:
 
         self.new_model_save_path = self._get_model_save_path()
 
+        self.chosen_players = None
         self._create_train_env()
         self._create_eval_env()
         self._create_callbacks()
 
-        if verbose:
+        if verbose and (self.chosen_players is not None):
             print("Chosen opponents: ")
             for player in self.chosen_players:
                 print(player.__name__ if not isinstance(player, str) else f"TorchPlayer:{player}")
@@ -93,8 +99,8 @@ class CustomReversiModel:
             n_steps=self.n_steps,
             batch_size=self.batch_size,
             policy_kwargs={
-                'features_extractor_class': CustomBoardExtractor,
-                'net_arch': [dict(pi=[32, 32], vf=[32, 32])]
+                'features_extractor_class': self.features_extractor,
+                'net_arch': self.net_arch
             }
         )
 
@@ -172,7 +178,7 @@ class CustomReversiModel:
         }
 
     def _get_local_players(self):
-        local_players = [RandomPlayer, GreedyPlayer]
+        local_players = []
         if self.local_path is not None:
             local_players += [f for f in os.listdir(self.local_path) if os.path.isfile(os.path.join(self.local_path, f))]
 

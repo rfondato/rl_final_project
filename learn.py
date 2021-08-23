@@ -1,6 +1,7 @@
 import os
 from argparse import ArgumentParser
 
+from custom_features_extractor import CustomBoardExtractor, CNNFeaturesExtractor
 from players import RandomPlayer, GreedyPlayer, TorchPlayer
 from reversi_model import CustomReversiModel
 from print_utils import print_bold, print_green, print_cyan
@@ -41,6 +42,12 @@ def parse_arguments():
                         help="Batch size. Default: 64", default=64)
     parser.add_argument("-lr", "--learning_rate", type=float,
                         help="Learning Rate. Default: 2e-4", default=2e-4)
+    parser.add_argument("-fe", "--features_extractor", type=str, choices=["MLP", "CNN"], default="MLP",
+                        help="Features extractor: CNN or MLP. Default: MLP")
+    parser.add_argument("-nn", "--num_neurons", type=int, default=32,
+                        help="Number of neurons on each layer of the policy and value networks. Default: 32.")
+    parser.add_argument("-nl", "--num_layers", type=int, default=2,
+                        help="Number of layers of the policy and value networks. Default: 2.")
     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose mode")
 
     return parser.parse_args()
@@ -63,23 +70,31 @@ Num of steps per epoch: {args.num_steps}
 Number of epochs: {args.epochs}
 Batch size: {args.batch_size}
 Learning rate: {args.learning_rate}
+Number of neurons: {args.num_neurons}
+Number of layers: {args.num_layers}
+Features extractor: {args.features_extractor}
 
 """)
 
 
 def learn(args):
     print_args(args)
+    features_extractor = CNNFeaturesExtractor if (args.features_extractor == "CNN") else CustomBoardExtractor
+    nn = [args.num_neurons for _ in range(args.num_layers)]
+    net_arch = [dict(pi=nn, vf=nn)]
     model = CustomReversiModel(board_shape=args.board_shape,
                                n_envs=args.envs,
                                local_player=players[args.opponent] if args.opponent in players else args.opponent,
                                n_steps=args.num_steps,
                                n_epochs=args.epochs,
                                learning_rate=args.learning_rate,
-                               ent_coef=0.001,
-                               gae_lambda=0.9,
+                               ent_coef=0.0,
+                               gae_lambda=0.95,
                                batch_size=args.batch_size,
+                               net_arch=net_arch,
                                load_from_path=args.model_path,
                                use_previous_saved_params=False,
+                               features_extractor=features_extractor,
                                path_local_player=args.opp_path,
                                device_local_player=args.opp_device,
                                verbose=args.verbose)
