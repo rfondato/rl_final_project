@@ -108,6 +108,8 @@ class Tournament:
         self.finished_matches = 0
 
     def play(self):
+        self.finished_matches = 0
+
         if self.log_folder is not None:
             self._create_log_folder()
 
@@ -185,6 +187,7 @@ class Tournament:
             position += 1
 
     def _load_players(self):
+        self.players = []
         models = [f for f in os.listdir(self.models_folder) if os.path.isfile(os.path.join(self.models_folder, f))]
         env = ReversiEnv(board_shape=self.board_shape)
         for m in models:
@@ -208,6 +211,7 @@ class Tournament:
             print()
 
     def _create_positions_table(self):
+        self.positions_table = dict()
         for p in self.players:
             self.positions_table[p.name] = 0
 

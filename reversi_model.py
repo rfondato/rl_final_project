@@ -178,7 +178,7 @@ class CustomReversiModel:
         }
 
     def _get_local_players(self):
-        local_players = []
+        local_players = [RandomPlayer, GreedyPlayer]
         if self.local_path is not None:
             local_players += [f for f in os.listdir(self.local_path) if os.path.isfile(os.path.join(self.local_path, f))]
 
