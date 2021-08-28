@@ -1,0 +1,29 @@
+MATCH: Modelo_CNN_vs_Random_3M vs 1er_modelo_vs_Random_1M 
+
+WINNER: 1er_modelo_vs_Random_1M
+
+
+####### STATS FOR PLAYER: 1 - TorchPlayer(Modelo_CNN_vs_Random_3M) #######
+
+Wins as first: 0.32075471698113206
+Wins as second: 0.3191489361702128
+Ties: 0.06
+Plays as first: 53
+Plays as second: 47
+Avg game duration: 60.0
+
+##########################################################################
+            
+        
+####### STATS FOR PLAYER: 2 - TorchPlayer(1er_modelo_vs_Random_1M) #######
+
+Wins as first: 0.6170212765957447
+Wins as second: 0.6226415094339622
+Ties: 0.06
+Plays as first: 47
+Plays as second: 53
+Avg game duration: 60.0
+
+##########################################################################
+            
+        

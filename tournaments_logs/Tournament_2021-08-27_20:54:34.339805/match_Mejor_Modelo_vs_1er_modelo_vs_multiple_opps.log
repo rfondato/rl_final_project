@@ -1,0 +1,29 @@
+MATCH: Mejor_Modelo vs 1er_modelo_vs_multiple_opps 
+
+WINNER: Mejor_Modelo
+
+
+####### STATS FOR PLAYER: 1 - TorchPlayer(Mejor_Modelo) #######
+
+Wins as first: 0.8363636363636363
+Wins as second: 0.8444444444444444
+Ties: 0.0
+Plays as first: 55
+Plays as second: 45
+Avg game duration: 59.99
+
+###############################################################
+            
+        
+####### STATS FOR PLAYER: 2 - TorchPlayer(1er_modelo_vs_multiple_opps) #######
+
+Wins as first: 0.15555555555555556
+Wins as second: 0.16363636363636364
+Ties: 0.0
+Plays as first: 45
+Plays as second: 55
+Avg game duration: 59.99
+
+##############################################################################
+            
+        

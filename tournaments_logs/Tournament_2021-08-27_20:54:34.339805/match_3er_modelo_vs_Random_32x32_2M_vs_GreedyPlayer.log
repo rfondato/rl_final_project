@@ -1,0 +1,29 @@
+MATCH: 3er_modelo_vs_Random_32x32_2M vs GreedyPlayer 
+
+WINNER: 3er_modelo_vs_Random_32x32_2M
+
+
+####### STATS FOR PLAYER: 1 - TorchPlayer(3er_modelo_vs_Random_32x32_2M) #######
+
+Wins as first: 0.9454545454545454
+Wins as second: 0.9555555555555556
+Ties: 0.01
+Plays as first: 55
+Plays as second: 45
+Avg game duration: 59.94
+
+################################################################################
+            
+        
+####### STATS FOR PLAYER: 2 - GreedyPlayer #######
+
+Wins as first: 0.044444444444444446
+Wins as second: 0.03636363636363636
+Ties: 0.01
+Plays as first: 45
+Plays as second: 55
+Avg game duration: 59.94
+
+##################################################
+            
+        

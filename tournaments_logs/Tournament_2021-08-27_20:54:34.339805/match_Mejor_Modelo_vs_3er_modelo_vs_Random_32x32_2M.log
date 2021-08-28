@@ -1,0 +1,29 @@
+MATCH: Mejor_Modelo vs 3er_modelo_vs_Random_32x32_2M 
+
+WINNER: Mejor_Modelo
+
+
+####### STATS FOR PLAYER: 1 - TorchPlayer(Mejor_Modelo) #######
+
+Wins as first: 0.8863636363636364
+Wins as second: 0.9642857142857143
+Ties: 0.01
+Plays as first: 44
+Plays as second: 56
+Avg game duration: 59.66
+
+###############################################################
+            
+        
+####### STATS FOR PLAYER: 2 - TorchPlayer(3er_modelo_vs_Random_32x32_2M) #######
+
+Wins as first: 0.03571428571428571
+Wins as second: 0.09090909090909091
+Ties: 0.01
+Plays as first: 56
+Plays as second: 44
+Avg game duration: 59.66
+
+################################################################################
+            
+        

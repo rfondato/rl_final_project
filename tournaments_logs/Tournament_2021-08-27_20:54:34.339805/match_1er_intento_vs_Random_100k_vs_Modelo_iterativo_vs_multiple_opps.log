@@ -1,0 +1,29 @@
+MATCH: 1er_intento_vs_Random_100k vs Modelo_iterativo_vs_multiple_opps 
+
+WINNER: Modelo_iterativo_vs_multiple_opps
+
+
+####### STATS FOR PLAYER: 1 - TorchPlayer(1er_intento_vs_Random_100k) #######
+
+Wins as first: 0.05084745762711865
+Wins as second: 0.04878048780487805
+Ties: 0.02
+Plays as first: 59
+Plays as second: 41
+Avg game duration: 59.97
+
+#############################################################################
+            
+        
+####### STATS FOR PLAYER: 2 - TorchPlayer(Modelo_iterativo_vs_multiple_opps) #######
+
+Wins as first: 0.9512195121951219
+Wins as second: 0.9152542372881356
+Ties: 0.02
+Plays as first: 41
+Plays as second: 59
+Avg game duration: 59.97
+
+####################################################################################
+            
+        

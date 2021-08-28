@@ -1,0 +1,29 @@
+MATCH: 1er_modelo_vs_Random_1M vs RandomPlayer 
+
+WINNER: 1er_modelo_vs_Random_1M
+
+
+####### STATS FOR PLAYER: 1 - TorchPlayer(1er_modelo_vs_Random_1M) #######
+
+Wins as first: 0.9302325581395349
+Wins as second: 0.9473684210526315
+Ties: 0.0
+Plays as first: 43
+Plays as second: 57
+Avg game duration: 60.0
+
+##########################################################################
+            
+        
+####### STATS FOR PLAYER: 2 - RandomPlayer #######
+
+Wins as first: 0.05263157894736842
+Wins as second: 0.06976744186046512
+Ties: 0.0
+Plays as first: 57
+Plays as second: 43
+Avg game duration: 60.0
+
+##################################################
+            
+        

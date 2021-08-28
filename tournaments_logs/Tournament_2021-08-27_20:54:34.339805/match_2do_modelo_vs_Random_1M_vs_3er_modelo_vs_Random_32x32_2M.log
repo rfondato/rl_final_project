@@ -1,0 +1,29 @@
+MATCH: 2do_modelo_vs_Random_1M vs 3er_modelo_vs_Random_32x32_2M 
+
+WINNER: 3er_modelo_vs_Random_32x32_2M
+
+
+####### STATS FOR PLAYER: 1 - TorchPlayer(2do_modelo_vs_Random_1M) #######
+
+Wins as first: 0.41509433962264153
+Wins as second: 0.425531914893617
+Ties: 0.05
+Plays as first: 53
+Plays as second: 47
+Avg game duration: 59.93
+
+##########################################################################
+            
+        
+####### STATS FOR PLAYER: 2 - TorchPlayer(3er_modelo_vs_Random_32x32_2M) #######
+
+Wins as first: 0.5319148936170213
+Wins as second: 0.5283018867924528
+Ties: 0.05
+Plays as first: 47
+Plays as second: 53
+Avg game duration: 59.93
+
+################################################################################
+            
+        

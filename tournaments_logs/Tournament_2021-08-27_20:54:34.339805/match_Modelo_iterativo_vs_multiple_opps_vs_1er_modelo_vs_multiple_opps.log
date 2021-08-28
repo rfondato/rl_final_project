@@ -1,0 +1,29 @@
+MATCH: Modelo_iterativo_vs_multiple_opps vs 1er_modelo_vs_multiple_opps 
+
+WINNER: Modelo_iterativo_vs_multiple_opps
+
+
+####### STATS FOR PLAYER: 1 - TorchPlayer(Modelo_iterativo_vs_multiple_opps) #######
+
+Wins as first: 0.868421052631579
+Wins as second: 0.8387096774193549
+Ties: 0.01
+Plays as first: 38
+Plays as second: 62
+Avg game duration: 59.95
+
+####################################################################################
+            
+        
+####### STATS FOR PLAYER: 2 - TorchPlayer(1er_modelo_vs_multiple_opps) #######
+
+Wins as first: 0.16129032258064516
+Wins as second: 0.10526315789473684
+Ties: 0.01
+Plays as first: 62
+Plays as second: 38
+Avg game duration: 59.95
+
+##############################################################################
+            
+        

@@ -1,0 +1,29 @@
+MATCH: Mejor_Modelo vs RandomPlayer 
+
+WINNER: Mejor_Modelo
+
+
+####### STATS FOR PLAYER: 1 - TorchPlayer(Mejor_Modelo) #######
+
+Wins as first: 0.975609756097561
+Wins as second: 0.864406779661017
+Ties: 0.03
+Plays as first: 41
+Plays as second: 59
+Avg game duration: 59.55
+
+###############################################################
+            
+        
+####### STATS FOR PLAYER: 2 - RandomPlayer #######
+
+Wins as first: 0.0847457627118644
+Wins as second: 0.024390243902439025
+Ties: 0.03
+Plays as first: 59
+Plays as second: 41
+Avg game duration: 59.55
+
+##################################################
+            
+        

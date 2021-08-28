@@ -1,0 +1,29 @@
+MATCH: RandomPlayer vs GreedyPlayer 
+
+WINNER: GreedyPlayer
+
+
+####### STATS FOR PLAYER: 1 - RandomPlayer #######
+
+Wins as first: 0.275
+Wins as second: 0.3333333333333333
+Ties: 0.01
+Plays as first: 40
+Plays as second: 60
+Avg game duration: 57.09
+
+##################################################
+            
+        
+####### STATS FOR PLAYER: 2 - GreedyPlayer #######
+
+Wins as first: 0.65
+Wins as second: 0.725
+Ties: 0.01
+Plays as first: 60
+Plays as second: 40
+Avg game duration: 57.09
+
+##################################################
+            
+        

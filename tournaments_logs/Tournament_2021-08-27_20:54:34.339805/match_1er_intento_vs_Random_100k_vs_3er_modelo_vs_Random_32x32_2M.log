@@ -1,0 +1,29 @@
+MATCH: 1er_intento_vs_Random_100k vs 3er_modelo_vs_Random_32x32_2M 
+
+WINNER: 3er_modelo_vs_Random_32x32_2M
+
+
+####### STATS FOR PLAYER: 1 - TorchPlayer(1er_intento_vs_Random_100k) #######
+
+Wins as first: 0.15789473684210525
+Wins as second: 0.11627906976744186
+Ties: 0.0
+Plays as first: 57
+Plays as second: 43
+Avg game duration: 59.54
+
+#############################################################################
+            
+        
+####### STATS FOR PLAYER: 2 - TorchPlayer(3er_modelo_vs_Random_32x32_2M) #######
+
+Wins as first: 0.8837209302325582
+Wins as second: 0.8421052631578947
+Ties: 0.0
+Plays as first: 43
+Plays as second: 57
+Avg game duration: 59.54
+
+################################################################################
+            
+        

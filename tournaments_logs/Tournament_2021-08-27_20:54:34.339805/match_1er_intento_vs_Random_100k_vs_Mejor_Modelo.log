@@ -1,0 +1,29 @@
+MATCH: 1er_intento_vs_Random_100k vs Mejor_Modelo 
+
+WINNER: Mejor_Modelo
+
+
+####### STATS FOR PLAYER: 1 - TorchPlayer(1er_intento_vs_Random_100k) #######
+
+Wins as first: 0.019230769230769232
+Wins as second: 0.10416666666666667
+Ties: 0.03
+Plays as first: 52
+Plays as second: 48
+Avg game duration: 59.99
+
+#############################################################################
+            
+        
+####### STATS FOR PLAYER: 2 - TorchPlayer(Mejor_Modelo) #######
+
+Wins as first: 0.8541666666666666
+Wins as second: 0.9615384615384616
+Ties: 0.03
+Plays as first: 48
+Plays as second: 52
+Avg game duration: 59.99
+
+###############################################################
+            
+        

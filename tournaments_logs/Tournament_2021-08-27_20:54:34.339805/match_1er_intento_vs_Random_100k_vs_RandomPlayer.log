@@ -1,0 +1,29 @@
+MATCH: 1er_intento_vs_Random_100k vs RandomPlayer 
+
+WINNER: 1er_intento_vs_Random_100k
+
+
+####### STATS FOR PLAYER: 1 - TorchPlayer(1er_intento_vs_Random_100k) #######
+
+Wins as first: 0.8529411764705882
+Wins as second: 0.7121212121212122
+Ties: 0.04
+Plays as first: 34
+Plays as second: 66
+Avg game duration: 59.99
+
+#############################################################################
+            
+        
+####### STATS FOR PLAYER: 2 - RandomPlayer #######
+
+Wins as first: 0.24242424242424243
+Wins as second: 0.11764705882352941
+Ties: 0.04
+Plays as first: 66
+Plays as second: 34
+Avg game duration: 59.99
+
+##################################################
+            
+        

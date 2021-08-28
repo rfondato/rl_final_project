@@ -1,0 +1,29 @@
+MATCH: 1er_modelo_vs_multiple_opps vs RandomPlayer 
+
+WINNER: 1er_modelo_vs_multiple_opps
+
+
+####### STATS FOR PLAYER: 1 - TorchPlayer(1er_modelo_vs_multiple_opps) #######
+
+Wins as first: 0.9565217391304348
+Wins as second: 0.8888888888888888
+Ties: 0.01
+Plays as first: 46
+Plays as second: 54
+Avg game duration: 60.0
+
+##############################################################################
+            
+        
+####### STATS FOR PLAYER: 2 - RandomPlayer #######
+
+Wins as first: 0.09259259259259259
+Wins as second: 0.043478260869565216
+Ties: 0.01
+Plays as first: 54
+Plays as second: 46
+Avg game duration: 60.0
+
+##################################################
+            
+        

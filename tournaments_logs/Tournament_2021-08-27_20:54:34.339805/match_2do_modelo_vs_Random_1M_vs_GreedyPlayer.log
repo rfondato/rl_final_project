@@ -1,0 +1,29 @@
+MATCH: 2do_modelo_vs_Random_1M vs GreedyPlayer 
+
+WINNER: 2do_modelo_vs_Random_1M
+
+
+####### STATS FOR PLAYER: 1 - TorchPlayer(2do_modelo_vs_Random_1M) #######
+
+Wins as first: 0.875
+Wins as second: 0.9545454545454546
+Ties: 0.02
+Plays as first: 56
+Plays as second: 44
+Avg game duration: 59.56
+
+##########################################################################
+            
+        
+####### STATS FOR PLAYER: 2 - GreedyPlayer #######
+
+Wins as first: 0.045454545454545456
+Wins as second: 0.08928571428571429
+Ties: 0.02
+Plays as first: 44
+Plays as second: 56
+Avg game duration: 59.56
+
+##################################################
+            
+        

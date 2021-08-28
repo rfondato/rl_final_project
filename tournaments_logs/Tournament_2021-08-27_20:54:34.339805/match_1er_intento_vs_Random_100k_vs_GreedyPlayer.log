@@ -1,0 +1,29 @@
+MATCH: 1er_intento_vs_Random_100k vs GreedyPlayer 
+
+WINNER: 1er_intento_vs_Random_100k
+
+
+####### STATS FOR PLAYER: 1 - TorchPlayer(1er_intento_vs_Random_100k) #######
+
+Wins as first: 0.5957446808510638
+Wins as second: 0.7924528301886793
+Ties: 0.03
+Plays as first: 47
+Plays as second: 53
+Avg game duration: 59.57
+
+#############################################################################
+            
+        
+####### STATS FOR PLAYER: 2 - GreedyPlayer #######
+
+Wins as first: 0.16981132075471697
+Wins as second: 0.3829787234042553
+Ties: 0.03
+Plays as first: 53
+Plays as second: 47
+Avg game duration: 59.57
+
+##################################################
+            
+        
